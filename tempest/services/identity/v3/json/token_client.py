@@ -36,21 +36,25 @@ class V3TokenClientJSON(service_client.ServiceClient):
         self.auth_url = auth_url
 
     def auth(self, user=None, password=None, project=None, user_type='id',
-             user_domain=None, project_domain=None, token=None):
+             user_domain=None, project_domain=None, token=None, domain=None):
         """
         :param user: user id or name, as specified in user_type
         :param user_domain: the user domain
         :param project_domain: the project domain
         :param token: a token to re-scope.
+        :param domain: the domain to scope to.
 
         Accepts different combinations of credentials. Restrictions:
         - project and domain are only name (no id)
         Sample sample valid combinations:
         - token
         - token, project, project_domain
+        - token, domain
         - user_id, password
+        - user_id, password, domain
         - username, password, user_domain
         - username, password, project, user_domain, project_domain
+        - username, password, user_domain, domain
         Validation is left to the server side.
         """
         creds = {
@@ -80,10 +84,16 @@ class V3TokenClientJSON(service_client.ServiceClient):
             if user_domain is not None:
                 _domain = dict(name=user_domain)
                 id_obj['password']['user']['domain'] = _domain
+
+        scope = None
+        if domain is not None:
+            _domain = dict(name=domain)
+            scope = dict(domain=_domain)
         if project is not None:
             _domain = dict(name=project_domain)
             _project = dict(name=project, domain=_domain)
             scope = dict(project=_project)
+        if scope:
             creds['auth']['scope'] = scope
 
         body = json.dumps(creds)
@@ -119,13 +129,13 @@ class V3TokenClientJSON(service_client.ServiceClient):
         return resp, json.loads(resp_body)
 
     def get_token(self, user, password, project=None, project_domain='Default',
-                  user_domain='Default', auth_data=False):
+                  user_domain='Default', auth_data=False, domain=None):
         """
         :param user: username
         Returns (token id, token data) for supplied credentials
         """
         body = self.auth(user, password, project, user_type='name',
-                         user_domain=user_domain,
+                         user_domain=user_domain, domain=domain,
                          project_domain=project_domain)
 
         token = body.response.get('x-subject-token')

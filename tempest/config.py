@@ -108,8 +108,11 @@ IdentityGroup = [
                help="API key to use when authenticating.",
                secret=True),
     cfg.StrOpt('domain_name',
-               help="Domain name for authentication (Keystone V3)."
-                    "The same domain applies to user and project"),
+               help="Domain name for authentication (Keystone V3)."),
+    cfg.StrOpt('user_domain_name',
+               help="Domain name for the user being authenticated."),
+    cfg.StrOpt('project_domain_name',
+               help="Domain name for the project being authenticated."),
     cfg.StrOpt('alt_username',
                help="Username of alternate user to use for Nova API "
                     "requests."),
@@ -120,8 +123,12 @@ IdentityGroup = [
                help="API key to use when authenticating as alternate user.",
                secret=True),
     cfg.StrOpt('alt_domain_name',
-               help="Alternate domain name for authentication (Keystone V3)."
-                    "The same domain applies to user and project"),
+               help="Alternate domain name for authentication (Keystone V3)."),
+    cfg.StrOpt('alt_user_domain_name',
+               help="Alternate domain name for the user being authenticated."),
+    cfg.StrOpt('alt_project_domain_name',
+               help="Alternate Domain name for the project being "
+                    "authenticated."),
     cfg.StrOpt('admin_username',
                help="Administrative Username to use for "
                     "Keystone API requests."),
@@ -132,8 +139,11 @@ IdentityGroup = [
                help="API key to use when authenticating as admin.",
                secret=True),
     cfg.StrOpt('admin_domain_name',
-               help="Admin domain name for authentication (Keystone V3)."
-                    "The same domain applies to user and project"),
+               help="Admin domain name for authentication (Keystone V3)."),
+    cfg.StrOpt('admin_user_domain_name',
+               help="Admin domain name for the user being authenticated."),
+    cfg.StrOpt('admin_project_domain_name',
+               help="Admin domain name for the project being authenticated."),
 ]
 
 identity_feature_group = cfg.OptGroup(name='identity-feature-enabled',

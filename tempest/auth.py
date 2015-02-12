@@ -339,6 +339,7 @@ class KeystoneV3AuthProvider(KeystoneAuthProvider):
             project=self.credentials.tenant_name,
             user_domain=self.credentials.user_domain_name,
             project_domain=self.credentials.project_domain_name,
+            domain=self.credentials.domain_name,
             auth_data=True)
 
     def _fill_credentials(self, auth_data_body):
@@ -614,10 +615,12 @@ class KeystoneV3Credentials(KeystoneV2Credentials):
     Credentials suitable for the Keystone Identity V3 API
     """
 
-    CONF_ATTRIBUTES = ['domain_name', 'password', 'tenant_name', 'username']
-    ATTRIBUTES = ['project_domain_id', 'project_domain_name', 'project_id',
-                  'project_name', 'tenant_id', 'tenant_name', 'user_domain_id',
-                  'user_domain_name', 'user_id']
+    CONF_ATTRIBUTES = ['password', 'tenant_name', 'username',
+                       'user_domain_name', 'project_domain_name',
+                       'domain_name']
+    ATTRIBUTES = ['project_domain_id', 'project_id', 'project_name',
+                  'tenant_id', 'tenant_name', 'user_domain_id', 'user_id',
+                  'domain_id']
     ATTRIBUTES.extend(CONF_ATTRIBUTES)
 
     def __init__(self, **kwargs):
@@ -643,22 +646,34 @@ class KeystoneV3Credentials(KeystoneV2Credentials):
         elif key == 'project_name':
             parent.__setattr__('tenant_name', value)
         # for *_domain_* set both user and project if not set yet
+        # because of the way domains are setup don't let a None value from CONF
+        # override a default value that has already been set.
         if key == 'user_domain_id':
             if self.project_domain_id is None:
                 parent.__setattr__('project_domain_id', value)
+            if not value and self.user_domain_id:
+                return
         if key == 'project_domain_id':
             if self.user_domain_id is None:
                 parent.__setattr__('user_domain_id', value)
+            if not value and self.project_domain_id:
+                return
         if key == 'user_domain_name':
             if self.project_domain_name is None:
                 parent.__setattr__('project_domain_name', value)
+            if not value and self.user_domain_name:
+                return
         if key == 'project_domain_name':
             if self.user_domain_name is None:
                 parent.__setattr__('user_domain_name', value)
+            if not value and self.project_domain_name:
+                return
         # support domain_name coming from config
         if key == 'domain_name':
-            parent.__setattr__('user_domain_name', value)
-            parent.__setattr__('project_domain_name', value)
+            if self.user_domain_name is None:
+                parent.__setattr__('user_domain_name', value)
+            if self.project_domain_name is None:
+                parent.__setattr__('project_domain_name', value)
         # finally trigger default behaviour for all attributes
         parent.__setattr__(key, value)
 
@@ -671,6 +686,8 @@ class KeystoneV3Credentials(KeystoneV2Credentials):
         - None
         - Project id (optional domain)
         - Project name and its domain id/name
+        - Domain id
+        - Domain name
         """
         valid_user_domain = any(
             [self.user_domain_id is not None,
@@ -685,4 +702,6 @@ class KeystoneV3Credentials(KeystoneV2Credentials):
             [self.project_name is None and self.project_id is None,
              self.project_id is not None,
              self.project_name is not None and valid_project_domain])
-        return all([self.password is not None, valid_user, valid_project])
+        valid_domain = self.domain_id or self.domain_name
+        valid_scope = valid_project or valid_domain
+        return all([self.password is not None, valid_user, valid_scope])
