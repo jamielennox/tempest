@@ -20,8 +20,9 @@ from tempest.common import service_client
 from tempest import config
 from tempest import exceptions
 from tempest.openstack.common.fixture import mockpatch
-from tempest.services.identity.json import identity_client as json_iden_client
-from tempest.services.identity.json import token_client as json_token_client
+from tempest.services.identity.v2.json import identity_client as \
+    json_iden_client
+from tempest.services.identity.v2.json import token_client as json_token_client
 from tempest.services.network.json import network_client as json_network_client
 from tempest.tests import base
 from tempest.tests import fake_config
