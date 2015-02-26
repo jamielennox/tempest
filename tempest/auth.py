@@ -322,8 +322,10 @@ class KeystoneV3AuthProvider(KeystoneAuthProvider):
             user=self.credentials.username,
             password=self.credentials.password,
             project=self.credentials.tenant_name,
-            user_domain=self.credentials.user_domain_name,
-            project_domain=self.credentials.project_domain_name,
+            user_domain_id=self.credentials.user_domain_id,
+            user_domain_name=self.credentials.user_domain_name,
+            project_domain_id=self.credentials.project_domain_id,
+            project_domain_name=self.credentials.project_domain_name,
             auth_data=True)
 
     def _fill_credentials(self, auth_data_body):

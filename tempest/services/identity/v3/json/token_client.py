@@ -33,11 +33,14 @@ class V3TokenClientJSON(service_client.ServiceClient):
         self.auth_url = auth_url
 
     def auth(self, user=None, password=None, project=None, user_type='id',
-             user_domain=None, project_domain=None, token=None):
+             user_domain_id=None, user_domain_name=None,
+             project_domain_id=None, project_domain_name=None, token=None):
         """
         :param user: user id or name, as specified in user_type
-        :param user_domain: the user domain
-        :param project_domain: the project domain
+        :param user_domain_id: the user domain id
+        :param user_domain_name: the user domain name
+        :param project_domain_id: the project domain id
+        :param project_domain_name: the project domain name
         :param token: a token to re-scope.
 
         Accepts different combinations of credentials. Restrictions:
@@ -74,11 +77,21 @@ class V3TokenClientJSON(service_client.ServiceClient):
                 id_obj['password']['user']['id'] = user
             else:
                 id_obj['password']['user']['name'] = user
-            if user_domain is not None:
-                _domain = dict(name=user_domain)
+
+            _domain = None
+            if user_domain_id is not None:
+                _domain = dict(name=user_domain_id)
+            elif user_domain_name is not None:
+                _domain = dict(name=user_domain_name)
+            if _domain:
                 id_obj['password']['user']['domain'] = _domain
         if project is not None:
-            _domain = dict(name=project_domain)
+            _domain = dict()
+            if project_domain_id is not None:
+                _domain['id'] = project_domain_id
+            elif project_domain_name is not None:
+                _domain['name'] = project_domain_name
+
             _project = dict(name=project, domain=_domain)
             scope = dict(project=_project)
             creds['auth']['scope'] = scope
@@ -115,15 +128,24 @@ class V3TokenClientJSON(service_client.ServiceClient):
 
         return resp, json.loads(resp_body)
 
-    def get_token(self, user, password, project=None, project_domain='Default',
-                  user_domain='Default', auth_data=False):
+    def get_token(self, user, password, project=None, project_domain_id=None,
+                  project_domain_name=None, user_domain_id=None,
+                  user_domain_name=None, auth_data=False):
         """
         :param user: username
         Returns (token id, token data) for supplied credentials
         """
+
+        if not (user_domain_id or user_domain_name):
+            user_domain_name = 'Default'
+        if not (project_domain_id or project_domain_name):
+            project_domain_name = 'Default'
+
         body = self.auth(user, password, project, user_type='name',
-                         user_domain=user_domain,
-                         project_domain=project_domain)
+                         user_domain_id=user_domain_id,
+                         user_domain_name=user_domain_name,
+                         project_domain_id=project_domain_id,
+                         project_domain_name=project_domain_name)
 
         token = body.response.get('x-subject-token')
         if auth_data:

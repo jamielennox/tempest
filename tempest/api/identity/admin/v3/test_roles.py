@@ -143,7 +143,7 @@ class RolesV3TestJSON(base.BaseIdentityV3AdminTest):
                                password=self.u_password,
                                user_domain=self.domain['name'],
                                project=self.project['name'],
-                               project_domain=self.domain['name'])
+                               project_domain_name=self.domain['name'])
         roles = body['token']['roles']
         self.assertEqual(len(roles), 1)
         self.assertEqual(roles[0]['id'], self.role['id'])
