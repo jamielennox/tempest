@@ -71,6 +71,7 @@ class V3TokenClientJSON(service_client.ServiceClient):
             id_obj['token'] = {
                 'id': token
             }
+
         if (user_id or username) and password:
             id_obj['methods'].append('password')
             id_obj['password'] = {
@@ -90,6 +91,7 @@ class V3TokenClientJSON(service_client.ServiceClient):
                 _domain = dict(name=user_domain_name)
             if _domain:
                 id_obj['password']['user']['domain'] = _domain
+
         if (project_id or project_name):
             _project = dict()
 
@@ -98,12 +100,16 @@ class V3TokenClientJSON(service_client.ServiceClient):
             elif project_name:
                 _project['name'] = project_name
 
-            if project_domain_id is not None:
-                _project['domain'] = {'id': project_domain_id}
-            elif project_domain_name is not None:
-                _project['domain'] = {'name': project_domain_name}
+                if project_domain_id is not None:
+                    _project['domain'] = {'id': project_domain_id}
+                elif project_domain_name is not None:
+                    _project['domain'] = {'name': project_domain_name}
 
             creds['auth']['scope'] = dict(project=_project)
+        elif domain_id:
+            creds['auth']['scope'] = dict(domain={'id': domain_id})
+        elif domain_name:
+            creds['auth']['scope'] = dict(domain={'name': domain_name})
 
         body = json.dumps(creds)
         resp, body = self.post(self.auth_url, body=body)
@@ -139,7 +145,6 @@ class V3TokenClientJSON(service_client.ServiceClient):
 
     def get_token(self, **kwargs):
         """
-        :param user: username
         Returns (token id, token data) for supplied credentials
         """
 

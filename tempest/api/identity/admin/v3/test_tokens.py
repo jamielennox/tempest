@@ -85,7 +85,7 @@ class TokensV3TestJSON(base.BaseIdentityV3AdminTest):
                                      role['id'])
 
         # Get an unscoped token.
-        token_auth = self.token.auth(user=user['id'],
+        token_auth = self.token.auth(user_id=user['id'],
                                      password=user_password)
 
         token_id = token_auth.response['x-subject-token']
@@ -108,7 +108,7 @@ class TokensV3TestJSON(base.BaseIdentityV3AdminTest):
 
         # Use the unscoped token to get a scoped token.
         token_auth = self.token.auth(token=token_id,
-                                     project=project1_name,
+                                     project_name=project1_name,
                                      project_domain_name='Default')
         token1_id = token_auth.response['x-subject-token']
 
@@ -138,7 +138,7 @@ class TokensV3TestJSON(base.BaseIdentityV3AdminTest):
 
         # Now get another scoped token using the unscoped token.
         token_auth = self.token.auth(token=token_id,
-                                     project=project2_name,
+                                     project_name=project2_name,
                                      project_domain='Default')
 
         self.assertEqual(project2['id'],
