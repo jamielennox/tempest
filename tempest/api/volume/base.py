@@ -246,40 +246,40 @@ class BaseVolumeTest(api_version_utils.BaseMicroversionTest,
 class BaseVolumeAdminTest(BaseVolumeTest):
     """Base test case class for all Volume Admin API tests."""
 
-    credentials = ['primary', 'admin']
+    credentials = ['primary', 'admin', 'system']
 
     @classmethod
     def setup_clients(cls):
         super(BaseVolumeAdminTest, cls).setup_clients()
 
-        cls.admin_volume_qos_client = cls.os_admin.volume_qos_v2_client
+        cls.admin_volume_qos_client = cls.os_system.volume_qos_v2_client
         cls.admin_volume_services_client = \
-            cls.os_admin.volume_services_v2_client
-        cls.admin_volume_types_client = cls.os_admin.volume_types_v2_client
-        cls.admin_volume_manage_client = cls.os_admin.volume_manage_v2_client
-        cls.admin_volume_client = cls.os_admin.volumes_v2_client
+            cls.os_system.volume_services_v2_client
+        cls.admin_volume_types_client = cls.os_system.volume_types_v2_client
+        cls.admin_volume_manage_client = cls.os_system.volume_manage_v2_client
+        cls.admin_volume_client = cls.os_system.volumes_v2_client
         if cls._api_version == 3:
-            cls.admin_volume_client = cls.os_admin.volumes_v3_client
-            cls.admin_groups_client = cls.os_admin.groups_v3_client
-            cls.admin_messages_client = cls.os_admin.volume_v3_messages_client
+            cls.admin_volume_client = cls.os_system.volumes_v3_client
+            cls.admin_groups_client = cls.os_system.groups_v3_client
+            cls.admin_messages_client = cls.os_system.volume_v3_messages_client
             cls.admin_group_snapshots_client = \
-                cls.os_admin.group_snapshots_v3_client
-            cls.admin_group_types_client = cls.os_admin.group_types_v3_client
-        cls.admin_hosts_client = cls.os_admin.volume_hosts_v2_client
+                cls.os_system.group_snapshots_v3_client
+            cls.admin_group_types_client = cls.os_system.group_types_v3_client
+        cls.admin_hosts_client = cls.os_system.volume_hosts_v2_client
         cls.admin_snapshot_manage_client = \
-            cls.os_admin.snapshot_manage_v2_client
-        cls.admin_snapshots_client = cls.os_admin.snapshots_v2_client
-        cls.admin_backups_client = cls.os_admin.backups_v2_client
+            cls.os_system.snapshot_manage_v2_client
+        cls.admin_snapshots_client = cls.os_system.snapshots_v2_client
+        cls.admin_backups_client = cls.os_system.backups_v2_client
         cls.admin_encryption_types_client = \
-            cls.os_admin.encryption_types_v2_client
+            cls.os_system.encryption_types_v2_client
         cls.admin_quota_classes_client = \
-            cls.os_admin.volume_quota_classes_v2_client
-        cls.admin_quotas_client = cls.os_admin.volume_quotas_v2_client
-        cls.admin_volume_limits_client = cls.os_admin.volume_v2_limits_client
+            cls.os_system.volume_quota_classes_v2_client
+        cls.admin_quotas_client = cls.os_system.volume_quotas_v2_client
+        cls.admin_volume_limits_client = cls.os_system.volume_v2_limits_client
         cls.admin_capabilities_client = \
-            cls.os_admin.volume_capabilities_v2_client
+            cls.os_system.volume_capabilities_v2_client
         cls.admin_scheduler_stats_client = \
-            cls.os_admin.volume_scheduler_stats_v2_client
+            cls.os_system.volume_scheduler_stats_v2_client
 
     @classmethod
     def resource_setup(cls):

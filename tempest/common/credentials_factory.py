@@ -87,7 +87,8 @@ def get_dynamic_provider_params(identity_version, admin_creds=None):
         ('create_networks', (CONF.auth.create_isolated_networks and not
                              CONF.network.shared_physical_network)),
         ('resource_prefix', CONF.resources_prefix),
-        ('identity_admin_endpoint_type', endpoint_type)
+        ('identity_admin_endpoint_type', endpoint_type),
+        ('admin_project_id', CONF.auth.admin_project_id),
     ]))
 
 

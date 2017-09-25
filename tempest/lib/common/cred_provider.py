@@ -56,6 +56,10 @@ class CredentialProvider(object):
         return
 
     @abc.abstractmethod
+    def get_system_creds(self):
+        return
+
+    @abc.abstractmethod
     def get_alt_creds(self):
         return
 

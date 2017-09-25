@@ -109,6 +109,9 @@ AuthGroup = [
                help="Admin domain name for authentication (Keystone V3)."
                     "The same domain applies to user and project",
                deprecated_group='identity'),
+    cfg.StrOpt('admin_project_id',
+               help="Use the provided project id for system operations that "
+                    "must use the admin project scope.")
 ]
 
 identity_group = cfg.OptGroup(name='identity',

@@ -26,7 +26,7 @@ QUOTA_USAGE_KEYS = ['reserved', 'limit', 'in_use']
 class BaseVolumeQuotasAdminTestJSON(base.BaseVolumeAdminTest):
     force_tenant_isolation = True
 
-    credentials = ['primary', 'alt', 'admin']
+    credentials = ['primary', 'alt', 'admin', 'system']
 
     def setUp(self):
         # NOTE(jeremy.zhang): Avoid conflicts with volume quota class tests.

@@ -73,7 +73,8 @@ class DynamicCredentialProvider(cred_provider.CredentialProvider):
                  neutron_available=False, create_networks=True,
                  project_network_cidr=None, project_network_mask_bits=None,
                  public_network_id=None, resource_prefix=None,
-                 identity_admin_endpoint_type='public', identity_uri=None):
+                 identity_admin_endpoint_type='public', identity_uri=None,
+                 admin_project_id=None):
         super(DynamicCredentialProvider, self).__init__(
             identity_version=identity_version, identity_uri=identity_uri,
             admin_role=admin_role, name=name,
@@ -92,6 +93,7 @@ class DynamicCredentialProvider(cred_provider.CredentialProvider):
         self.identity_admin_domain_scope = identity_admin_domain_scope
         self.identity_admin_role = identity_admin_role or 'admin'
         self.identity_admin_endpoint_type = identity_admin_endpoint_type
+        self.admin_project_id = admin_project_id
         self.extra_roles = extra_roles or []
         (self.identity_admin_client,
          self.tenants_admin_client,
@@ -157,7 +159,7 @@ class DynamicCredentialProvider(cred_provider.CredentialProvider):
                     os.network.PortsClient(),
                     os.network.SecurityGroupsClient())
 
-    def _create_creds(self, admin=False, roles=None):
+    def _create_creds(self, admin=False, system=False, roles=None):
         """Create credentials with random name.
 
         Creates project and user. When admin flag is True create user
@@ -166,20 +168,30 @@ class DynamicCredentialProvider(cred_provider.CredentialProvider):
 
         :param admin: Flag if to assign to the user admin role
         :type admin: bool
+        :param system: Flag if to use the system project.
+        :type system: bool
         :param roles: Roles to assign for the user
         :type roles: list
         :return: Readonly Credentials with network resources
         """
         root = self.name
+        username = data_utils.rand_name(root, prefix=self.resource_prefix)
+        use_admin_project = system and self.admin_project_id
 
-        project_name = data_utils.rand_name(root, prefix=self.resource_prefix)
-        project_desc = project_name + "-desc"
-        project = self.creds_client.create_project(
-            name=project_name, description=project_desc)
+        # for compatibility we assume we are only using the admin_project if
+        # the id was provided to config, otherwise we use the traditional
+        # admin role on any project concept
+        if use_admin_project:
+            project = {'id': self.admin_project_id, 'name': 'admin'}
+        else:
+            # NOTE(andreaf) User and project can be distinguished from the
+            # context, having the same ID in both makes it easier to match them
+            # and debug.
+            project_name = username
+            project_desc = project_name + "-desc"
+            project = self.creds_client.create_project(
+                name=project_name, description=project_desc)
 
-        # NOTE(andreaf) User and project can be distinguished from the context,
-        # having the same ID in both makes it easier to match them and debug.
-        username = project_name
         user_password = data_utils.rand_password()
         email = data_utils.rand_name(
             root, prefix=self.resource_prefix) + "@example.com"
@@ -193,6 +205,11 @@ class DynamicCredentialProvider(cred_provider.CredentialProvider):
                     self.identity_admin_domain_scope):
                 self.creds_client.assign_user_role_on_domain(
                     user, self.identity_admin_role)
+        if use_admin_project:
+            # we should be able to define non-admin in system, but this isn't
+            # really used yet.
+            self.creds_client.assign_user_role(user, project, self.admin_role)
+            role_assigned = True
         # Add roles specified in config file
         for conf_role in self.extra_roles:
             self.creds_client.assign_user_role(user, project, conf_role)
@@ -213,6 +230,8 @@ class DynamicCredentialProvider(cred_provider.CredentialProvider):
             self.creds_client.assign_user_role(user, project, 'Member')
 
         creds = self.creds_client.get_credentials(user, project, user_password)
+        if use_admin_project:
+            creds.clean_project = False
         return cred_provider.TestResources(creds)
 
     def _create_network_resources(self, tenant_id):
@@ -331,9 +350,11 @@ class DynamicCredentialProvider(cred_provider.CredentialProvider):
         if self._creds.get(str(credential_type)):
             credentials = self._creds[str(credential_type)]
         else:
-            if credential_type in ['primary', 'alt', 'admin']:
+            if credential_type in ['primary', 'alt', 'admin', 'system']:
                 is_admin = (credential_type == 'admin')
-                credentials = self._create_creds(admin=is_admin)
+                is_system = (credential_type == 'system')
+                credentials = self._create_creds(admin=is_admin,
+                                                 system=is_system)
             else:
                 credentials = self._create_creds(roles=credential_type)
             self._creds[str(credential_type)] = credentials
@@ -354,6 +375,9 @@ class DynamicCredentialProvider(cred_provider.CredentialProvider):
 
     def get_admin_creds(self):
         return self.get_credentials('admin')
+
+    def get_system_creds(self):
+        return self.get_credentials('system')
 
     def get_alt_creds(self):
         return self.get_credentials('alt')
@@ -444,27 +468,30 @@ class DynamicCredentialProvider(cred_provider.CredentialProvider):
             return
         self._clear_isolated_net_resources()
         for creds in six.itervalues(self._creds):
-            try:
-                self.creds_client.delete_user(creds.user_id)
-            except lib_exc.NotFound:
-                LOG.warning("user with name: %s not found for delete",
-                            creds.username)
+            if getattr(creds, 'clean_user', True):
+                try:
+                    self.creds_client.delete_user(creds.user_id)
+                except lib_exc.NotFound:
+                    LOG.warning("user with name: %s not found for delete",
+                                creds.username)
             # NOTE(zhufl): Only when neutron's security_group ext is
             # enabled, _cleanup_default_secgroup will not raise error. But
             # here cannot use test_utils.is_extension_enabled for it will cause
             # "circular dependency". So here just use try...except to
             # ensure tenant deletion without big changes.
-            try:
-                if self.neutron_available:
-                    self._cleanup_default_secgroup(creds.tenant_id)
-            except lib_exc.NotFound:
-                LOG.warning("failed to cleanup tenant %s's secgroup",
-                            creds.tenant_name)
-            try:
-                self.creds_client.delete_project(creds.tenant_id)
-            except lib_exc.NotFound:
-                LOG.warning("tenant with name: %s not found for delete",
-                            creds.tenant_name)
+            if getattr(creds, 'clean_secgroup', True):
+                try:
+                    if self.neutron_available:
+                        self._cleanup_default_secgroup(creds.tenant_id)
+                except lib_exc.NotFound:
+                    LOG.warning("failed to cleanup tenant %s's secgroup",
+                                creds.tenant_name)
+            if getattr(creds, 'clean_project', True):
+                try:
+                    self.creds_client.delete_project(creds.tenant_id)
+                except lib_exc.NotFound:
+                    LOG.warning("tenant with name: %s not found for delete",
+                                creds.tenant_name)
         self._creds = {}
 
     def is_multi_user(self):

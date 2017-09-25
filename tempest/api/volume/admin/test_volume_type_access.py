@@ -25,7 +25,7 @@ CONF = config.CONF
 
 class VolumeTypesAccessTest(base.BaseVolumeAdminTest):
 
-    credentials = ['primary', 'alt', 'admin']
+    credentials = ['primary', 'alt', 'admin', 'system']
 
     @classmethod
     def setup_clients(cls):
